@@ -41,24 +41,25 @@ function startCommand(name, post_data, res) {
 			res.end("error: " + error);
 	}
 
+	// Callback for collecting results from multiple furbies
+	function respond_single(error, multiple_count_ref, multiple_errstring_ref) {
+		if (error != false)
+			multiple_errstring_ref.value += error + "; ";
+
+		multiple_count_ref.value++;
+		if (multiple_count_ref.value >= Object.keys(furbies).length)
+			respond(multiple_errstring_ref.value === "" ? false : multiple_errstring_ref.value);
+	}
+
 	// Send command to all connected furbies
 	if (!("target" in post_data) || post_data.target === "") {
 		// Multiple furbies: Collect results from all furbies and respond
-		let multiple_count = 0;
-		let multiple_errstring = "";
-
-		function respond_single(error) {
-			if (error != false)
-				multiple_errstring += error + "; ";
-
-			multiple_count++;
-			if (multiple_count >= Object.keys(furbies).length)
-				respond(multiple_errstring === "" ? false : multiple_errstring);
-		}
+		let multiple_count_ref = { value: 0 };
+		let multiple_errstring_ref = { value: "" };
 
 		winston.verbose("Sending " + name + " command to all Furbies, params:", post_data.params);
 		for (let uuid in furbies)
-			fluffaction.execute(furbies[uuid], name, post_data.params, respond_single);
+			fluffaction.execute(furbies[uuid], name, post_data.params, (error) => respond_single(error, multiple_count_ref, multiple_errstring_ref));
 
 		// Send command to a single one of the connected furbies
 	} else {

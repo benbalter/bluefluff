@@ -1,11 +1,19 @@
 var commands = {};
+var fluffd_url_cache = null;
 
 function fluffd_url(target) {
-	var url = $("#fluffd_url").val();
-	while (url.slice(-1) === "/")
-		url = url.slice(0, url.length - 1);
-	url += "/" + target;
-	return url;
+	// Cache the processed URL to avoid repeated string operations
+	if (!fluffd_url_cache) {
+		fluffd_url_cache = $("#fluffd_url").val();
+		while (fluffd_url_cache.slice(-1) === "/")
+			fluffd_url_cache = fluffd_url_cache.slice(0, fluffd_url_cache.length - 1);
+	}
+	return fluffd_url_cache + "/" + target;
+}
+
+// Reset cache when URL changes
+function reset_url_cache() {
+	fluffd_url_cache = null;
 }
 
 function sendcmd() {
@@ -116,4 +124,6 @@ $(function () {
 	update_cmdlist();
 	$("#fluffd_refresh").click(update_cmdlist);
 	$("#sendbutton").click(sendcmd);
+	// Reset URL cache when the URL input changes
+	$("#fluffd_url").on("change input", reset_url_cache);
 });
