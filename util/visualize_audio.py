@@ -9,7 +9,8 @@ import sys
 import os
 
 WIDTH = 40
-CHUNK_SIZE = WIDTH * 100  # Read 100 lines at a time for better performance
+LINES_PER_CHUNK = 100  # Number of lines to read per chunk for better I/O performance
+CHUNK_SIZE = WIDTH * LINES_PER_CHUNK
 
 # Parse path to DLC file
 parser = argparse.ArgumentParser()

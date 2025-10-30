@@ -37,6 +37,16 @@ for payload in INJECTIONS:
 	payload["fd"] = open(payload["path"], "rb")
 	print("Using " + payload["path"] + " with size " + str(payload["size"]) + " (" + str(payload["size"] / 40) + " columns)")
 
+# Pre-compute payload ranges for efficient overlap detection
+def chunk_has_payload(chunk_start, chunk_end):
+	"""Check if a chunk overlaps with any payload."""
+	for payload in INJECTIONS:
+		payload_start = payload["offset"]
+		payload_end = payload["offset"] + payload["size"]
+		if chunk_start < payload_end and chunk_end > payload_start:
+			return True
+	return False
+
 # Inject payloads with buffered I/O for better performance
 count = 0
 with open(OUTFILE, "wb") as outfile:
@@ -45,16 +55,10 @@ with open(OUTFILE, "wb") as outfile:
 		while count < target_size:
 			# Determine chunk size
 			chunk_size = min(BUFFER_SIZE, target_size - count)
+			chunk_end = count + chunk_size
 			
-			# Check if any payload overlaps with this chunk
-			has_payload = False
-			for payload in INJECTIONS:
-				if (count < payload["offset"] + payload["size"] and 
-					count + chunk_size > payload["offset"]):
-					has_payload = True
-					break
-			
-			if has_payload:
+			# Check if any payload overlaps with this chunk using pre-computed check
+			if chunk_has_payload(count, chunk_end):
 				# Process byte-by-byte for chunks with payloads
 				for _ in range(chunk_size):
 					override = False
