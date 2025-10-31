@@ -201,8 +201,22 @@ class Fluff {
 		this.gpCallbacks.push(callback);
 	}
 
+	removeGeneralPlusCallback(callback) {
+		const index = this.gpCallbacks.indexOf(callback);
+		if (index > -1) {
+			this.gpCallbacks.splice(index, 1);
+		}
+	}
+
 	addNordicCallback(callback) {
 		this.nCallbacks.push(callback);
+	}
+
+	removeNordicCallback(callback) {
+		const index = this.nCallbacks.indexOf(callback);
+		if (index > -1) {
+			this.nCallbacks.splice(index, 1);
+		}
 	}
 
 	// General-Purpose Key-Value storage for actions
