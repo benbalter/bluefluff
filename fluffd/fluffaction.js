@@ -228,8 +228,6 @@ commands["flashdlc"] = {
 						}
 					});
 
-					offset += 20;
-					
 					// Progress reporting every 10%
 					const currentChunk = Math.floor(offset / 20);
 					const progress = Math.floor((currentChunk / totalChunks) * 100);
@@ -237,6 +235,8 @@ commands["flashdlc"] = {
 						winston.info("FlashDLC: Progress " + progress + "%");
 						lastProgressReport = progress;
 					}
+
+					offset += 20;
 
 					// End of buffer: Stop writing
 					if (piece.length < 20) {
