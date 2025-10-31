@@ -3,12 +3,19 @@
 	"version": "1.0.0",
 	"description": "Furby Connect BLE Controller",
 	"main": "fluffd.js",
+	"scripts": {
+		"test": "mocha test/*.test.js",
+		"lint": "eslint *.js"
+	},
 	"dependencies": {
 		"@abandonware/noble": "1.9.2-23",
 		"winston": "3.11.0"
 	},
 	"devDependencies": {
-		"eslint": "5.9.0"
+		"chai": "^6.2.0",
+		"eslint": "5.9.0",
+		"mocha": "^11.7.4",
+		"sinon": "^21.0.0"
 	},
 	"author": "Jeija",
 	"license": "MIT"

@@ -9,6 +9,8 @@ import sys
 import os
 
 WIDTH = 40
+LINES_PER_CHUNK = 100  # Number of lines to read per chunk for better I/O performance
+CHUNK_SIZE = WIDTH * LINES_PER_CHUNK
 
 # Parse path to DLC file
 parser = argparse.ArgumentParser()
@@ -22,17 +24,23 @@ im = Image.new("RGB", (WIDTH, math.ceil(dlcsize / WIDTH)), "white")
 
 y = 0
 with open(args.dlcfile, "rb") as dlc:
-	data = dlc.read(WIDTH)
-
-	# ignore the last line
-	while len(data) == WIDTH:
-		for x in range(WIDTH):
-			val = data[x]
-			color = (val, val, val)
-			im.putpixel((x, y), color)
-		data = dlc.read(WIDTH)
-		y += 1
-
+	# Read in larger chunks for better I/O performance
+	while True:
+		chunk = dlc.read(CHUNK_SIZE)
+		if not chunk:
+			break
+		
+		# Process chunk line by line
+		for line_offset in range(0, len(chunk), WIDTH):
+			data = chunk[line_offset:line_offset + WIDTH]
+			if len(data) < WIDTH:
+				break  # Skip incomplete last line
+			
+			for x in range(WIDTH):
+				val = data[x]
+				color = (val, val, val)
+				im.putpixel((x, y), color)
+			y += 1
 
 # write to stdout
 im.save("audio.bmp")

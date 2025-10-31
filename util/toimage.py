@@ -9,6 +9,8 @@ import sys
 import os
 
 WIDTH = 64
+LINES_PER_CHUNK = 100  # Number of lines to read per chunk for better I/O performance
+CHUNK_SIZE = 0x30 * LINES_PER_CHUNK
 
 # Parse path to DLC file
 parser = argparse.ArgumentParser()
@@ -25,25 +27,31 @@ lookup = [0x00, 0x80, 0xf0, 0xff]
 
 y = 0
 with open(args.dlcfile, "rb") as dlc:
-	data = dlc.read(0x30)
+	# Read in larger chunks for better I/O performance
+	while True:
+		chunk = dlc.read(CHUNK_SIZE)
+		if not chunk:
+			break
+		
+		# Process chunk line by line
+		for line_offset in range(0, len(chunk), 0x30):
+			data = chunk[line_offset:line_offset + 0x30]
+			if len(data) < 0x30:
+				break  # Skip incomplete last line
+			
+			hexstr = codecs.getencoder("hex_codec")(data)[0].decode("utf-8")
+			print(hexstr)
 
-	# ignore the last line
-	while len(data) == 0x30:
-		hexstr = codecs.getencoder("hex_codec")(data)[0].decode("utf-8")
-		print(hexstr)
-
-		# 1 color is 2 bits, 6 bit color depth for 64 colors
-		# Iterate over two pixels per iteration
-		for x in range(int(WIDTH / 2)):
-			# Three hex characters represent two pixels
-			bothpix = hexstr[(x * 3):(x * 3 + 3)]
-			color1 = (lookup[int(bothpix[0], 16) & 0x03], lookup[int(bothpix[1], 16) >> 2], lookup[int(bothpix[0], 16) >> 2])
-			color2 = (lookup[int(bothpix[2], 16) >> 2], lookup[int(bothpix[2], 16) & 0x03], lookup[int(bothpix[1], 16) & 0x03])
-			im.putpixel((x * 2, y), color1)
-			im.putpixel((x * 2 + 1, y), color2)
-		data = dlc.read(0x30)
-		y += 1
-
+			# 1 color is 2 bits, 6 bit color depth for 64 colors
+			# Iterate over two pixels per iteration
+			for x in range(int(WIDTH / 2)):
+				# Three hex characters represent two pixels
+				bothpix = hexstr[(x * 3):(x * 3 + 3)]
+				color1 = (lookup[int(bothpix[0], 16) & 0x03], lookup[int(bothpix[1], 16) >> 2], lookup[int(bothpix[0], 16) >> 2])
+				color2 = (lookup[int(bothpix[2], 16) >> 2], lookup[int(bothpix[2], 16) & 0x03], lookup[int(bothpix[1], 16) & 0x03])
+				im.putpixel((x * 2, y), color1)
+				im.putpixel((x * 2 + 1, y), color2)
+			y += 1
 
 # write to stdout
 im.save("image.bmp")
