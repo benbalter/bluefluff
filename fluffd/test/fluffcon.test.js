@@ -2,6 +2,43 @@ const { expect } = require("chai");
 const sinon = require("sinon");
 
 describe("fluffcon Fluff class", function() {
+	// Helper function to create mock peripheral with all required characteristics
+	function createMockPeripheral(mockGpWrite, mockGpListen, mockNWrite, mockNListen, mockRssiListen, mockFileWrite) {
+		return {
+			uuid: "test-uuid",
+			connect: function(callback) {
+				callback(null);
+			},
+			discoverServices: function(uuids, callback) {
+				callback(null, [{
+					discoverCharacteristics: function(charUuids, callback) {
+						const chars = {
+							"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
+							"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
+							"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
+							"dab90756b5a1e29cb041bcd562613bde": mockNListen,
+							"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
+							"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
+						};
+						const result = charUuids.map(uuid => {
+							const char = Object.assign({}, chars[uuid]);
+							char.uuid = uuid;
+							return char;
+						});
+						callback(null, result);
+					}
+				}]);
+			},
+			disconnect: sinon.stub().callsArg(0)
+		};
+	}
+
+	// Helper function to get a fresh fluffcon instance
+	function getFreshFluffcon() {
+		delete require.cache[require.resolve("../fluffcon")];
+		return require("../fluffcon");
+	}
+
 	describe("Buffer.from() usage in startIdle", function() {
 		it("should use Buffer.from() for idle interval", function(done) {
 			this.timeout(5000);  // Increase timeout
@@ -32,38 +69,8 @@ describe("fluffcon Fluff class", function() {
 			};
 			const mockFileWrite = { write: sinon.stub() };
 
-			// Load fluffcon module
-			delete require.cache[require.resolve("../fluffcon")];
-			const fluffcon = require("../fluffcon");
-
-			// Create mock peripheral
-			const mockPeripheral = {
-				uuid: "test-uuid",
-				connect: function(callback) {
-					callback(null);
-				},
-				discoverServices: function(uuids, callback) {
-					callback(null, [{
-						discoverCharacteristics: function(charUuids, callback) {
-							const chars = {
-								"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
-								"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
-								"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
-								"dab90756b5a1e29cb041bcd562613bde": mockNListen,
-								"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
-								"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
-							};
-							const result = charUuids.map(uuid => {
-								const char = Object.assign({}, chars[uuid]);
-								char.uuid = uuid;
-								return char;
-							});
-							callback(null, result);
-						}
-					}]);
-				},
-				disconnect: sinon.stub().callsArg(0)
-			};
+			const fluffcon = getFreshFluffcon();
+			const mockPeripheral = createMockPeripheral(mockGpWrite, mockGpListen, mockNWrite, mockNListen, mockRssiListen, mockFileWrite);
 
 			// Connect and verify idle interval uses Buffer.from()
 			fluffcon.connect(mockPeripheral, function(fluff) {
@@ -107,36 +114,8 @@ describe("fluffcon Fluff class", function() {
 			};
 			const mockFileWrite = { write: sinon.stub() };
 
-			delete require.cache[require.resolve("../fluffcon")];
-			const fluffcon = require("../fluffcon");
-
-			const mockPeripheral = {
-				uuid: "test-uuid",
-				connect: function(callback) {
-					callback(null);
-				},
-				discoverServices: function(uuids, callback) {
-					callback(null, [{
-						discoverCharacteristics: function(charUuids, callback) {
-							const chars = {
-								"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
-								"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
-								"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
-								"dab90756b5a1e29cb041bcd562613bde": mockNListen,
-								"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
-								"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
-							};
-							const result = charUuids.map(uuid => {
-								const char = Object.assign({}, chars[uuid]);
-								char.uuid = uuid;
-								return char;
-							});
-							callback(null, result);
-						}
-					}]);
-				},
-				disconnect: sinon.stub().callsArg(0)
-			};
+			const fluffcon = getFreshFluffcon();
+			const mockPeripheral = createMockPeripheral(mockGpWrite, mockGpListen, mockNWrite, mockNListen, mockRssiListen, mockFileWrite);
 
 			fluffcon.connect(mockPeripheral, function(fluff) {
 				fluff.stopIdle();
@@ -179,36 +158,8 @@ describe("fluffcon Fluff class", function() {
 			};
 			const mockFileWrite = { write: sinon.stub() };
 
-			delete require.cache[require.resolve("../fluffcon")];
-			const fluffcon = require("../fluffcon");
-
-			const mockPeripheral = {
-				uuid: "test-uuid",
-				connect: function(callback) {
-					callback(null);
-				},
-				discoverServices: function(uuids, callback) {
-					callback(null, [{
-						discoverCharacteristics: function(charUuids, callback) {
-							const chars = {
-								"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
-								"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
-								"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
-								"dab90756b5a1e29cb041bcd562613bde": mockNListen,
-								"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
-								"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
-							};
-							const result = charUuids.map(uuid => {
-								const char = Object.assign({}, chars[uuid]);
-								char.uuid = uuid;
-								return char;
-							});
-							callback(null, result);
-						}
-					}]);
-				},
-				disconnect: sinon.stub().callsArg(0)
-			};
+			const fluffcon = getFreshFluffcon();
+			const mockPeripheral = createMockPeripheral(mockGpWrite, mockGpListen, mockNWrite, mockNListen, mockRssiListen, mockFileWrite);
 
 			fluffcon.connect(mockPeripheral, function(fluff) {
 				fluff.stopIdle();
@@ -248,36 +199,8 @@ describe("fluffcon Fluff class", function() {
 				write: sinon.stub().callsArgWith(2, null)
 			};
 
-			delete require.cache[require.resolve("../fluffcon")];
-			const fluffcon = require("../fluffcon");
-
-			const mockPeripheral = {
-				uuid: "test-uuid",
-				connect: function(callback) {
-					callback(null);
-				},
-				discoverServices: function(uuids, callback) {
-					callback(null, [{
-						discoverCharacteristics: function(charUuids, callback) {
-							const chars = {
-								"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
-								"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
-								"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
-								"dab90756b5a1e29cb041bcd562613bde": mockNListen,
-								"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
-								"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
-							};
-							const result = charUuids.map(uuid => {
-								const char = Object.assign({}, chars[uuid]);
-								char.uuid = uuid;
-								return char;
-							});
-							callback(null, result);
-						}
-					}]);
-				},
-				disconnect: sinon.stub().callsArg(0)
-			};
+			const fluffcon = getFreshFluffcon();
+			const mockPeripheral = createMockPeripheral(mockGpWrite, mockGpListen, mockNWrite, mockNListen, mockRssiListen, mockFileWrite);
 
 			fluffcon.connect(mockPeripheral, function(fluff) {
 				fluff.stopIdle();
@@ -315,36 +238,8 @@ describe("fluffcon Fluff class", function() {
 			};
 			const mockFileWrite = { write: sinon.stub() };
 
-			delete require.cache[require.resolve("../fluffcon")];
-			const fluffcon = require("../fluffcon");
-
-			const mockPeripheral = {
-				uuid: "test-uuid",
-				connect: function(callback) {
-					callback(null);
-				},
-				discoverServices: function(uuids, callback) {
-					callback(null, [{
-						discoverCharacteristics: function(charUuids, callback) {
-							const chars = {
-								"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
-								"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
-								"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
-								"dab90756b5a1e29cb041bcd562613bde": mockNListen,
-								"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
-								"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
-							};
-							const result = charUuids.map(uuid => {
-								const char = Object.assign({}, chars[uuid]);
-								char.uuid = uuid;
-								return char;
-							});
-							callback(null, result);
-						}
-					}]);
-				},
-				disconnect: sinon.stub().callsArg(0)
-			};
+			const fluffcon = getFreshFluffcon();
+			const mockPeripheral = createMockPeripheral(mockGpWrite, mockGpListen, mockNWrite, mockNListen, mockRssiListen, mockFileWrite);
 
 			fluffcon.connect(mockPeripheral, function(fluff) {
 				fluff.stopIdle();
@@ -386,36 +281,8 @@ describe("fluffcon Fluff class", function() {
 			};
 			const mockFileWrite = { write: sinon.stub() };
 
-			delete require.cache[require.resolve("../fluffcon")];
-			const fluffcon = require("../fluffcon");
-
-			const mockPeripheral = {
-				uuid: "test-uuid",
-				connect: function(callback) {
-					callback(null);
-				},
-				discoverServices: function(uuids, callback) {
-					callback(null, [{
-						discoverCharacteristics: function(charUuids, callback) {
-							const chars = {
-								"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
-								"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
-								"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
-								"dab90756b5a1e29cb041bcd562613bde": mockNListen,
-								"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
-								"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
-							};
-							const result = charUuids.map(uuid => {
-								const char = Object.assign({}, chars[uuid]);
-								char.uuid = uuid;
-								return char;
-							});
-							callback(null, result);
-						}
-					}]);
-				},
-				disconnect: sinon.stub().callsArg(0)
-			};
+			const fluffcon = getFreshFluffcon();
+			const mockPeripheral = createMockPeripheral(mockGpWrite, mockGpListen, mockNWrite, mockNListen, mockRssiListen, mockFileWrite);
 
 			fluffcon.connect(mockPeripheral, function(fluff) {
 				fluff.stopIdle();
@@ -461,36 +328,8 @@ describe("fluffcon Fluff class", function() {
 			};
 			const mockFileWrite = { write: sinon.stub() };
 
-			delete require.cache[require.resolve("../fluffcon")];
-			const fluffcon = require("../fluffcon");
-
-			const mockPeripheral = {
-				uuid: "test-uuid",
-				connect: function(callback) {
-					callback(null);
-				},
-				discoverServices: function(uuids, callback) {
-					callback(null, [{
-						discoverCharacteristics: function(charUuids, callback) {
-							const chars = {
-								"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
-								"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
-								"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
-								"dab90756b5a1e29cb041bcd562613bde": mockNListen,
-								"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
-								"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
-							};
-							const result = charUuids.map(uuid => {
-								const char = Object.assign({}, chars[uuid]);
-								char.uuid = uuid;
-								return char;
-							});
-							callback(null, result);
-						}
-					}]);
-				},
-				disconnect: sinon.stub().callsArg(0)
-			};
+			const fluffcon = getFreshFluffcon();
+			const mockPeripheral = createMockPeripheral(mockGpWrite, mockGpListen, mockNWrite, mockNListen, mockRssiListen, mockFileWrite);
 
 			fluffcon.connect(mockPeripheral, function(fluff) {
 				const initialCallCount = mockGpWrite.write.callCount;

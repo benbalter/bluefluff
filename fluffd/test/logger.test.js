@@ -17,8 +17,17 @@ describe("logger", function() {
 	
 	afterEach(function() {
 		// Restore original environment variables
-		process.env.LOG_LEVEL = originalEnv.LOG_LEVEL;
-		process.env.NODE_ENV = originalEnv.NODE_ENV;
+		if (originalEnv.LOG_LEVEL !== undefined) {
+			process.env.LOG_LEVEL = originalEnv.LOG_LEVEL;
+		} else {
+			delete process.env.LOG_LEVEL;
+		}
+		
+		if (originalEnv.NODE_ENV !== undefined) {
+			process.env.NODE_ENV = originalEnv.NODE_ENV;
+		} else {
+			delete process.env.NODE_ENV;
+		}
 	});
 
 	describe("log level configuration", function() {
