@@ -1,11 +1,10 @@
 const { expect } = require("chai");
 const sinon = require("sinon");
-const http = require("http");
 
 describe("fluffd HTTP server", function() {
-	let server;
-	let serverUrl;
-	const port = 3873; // Use different port from the actual server
+
+
+
 
 	// We'll test the routing logic without actually starting the full server
 	describe("command routing", function() {
@@ -24,10 +23,6 @@ describe("fluffd HTTP server", function() {
 				}
 			};
 
-			const mockRes = {
-				writeHead: sinon.spy(),
-				end: sinon.spy()
-			};
 
 			// Test URL parsing
 			const fragments = mockReq.url.substring(1).split("/");
