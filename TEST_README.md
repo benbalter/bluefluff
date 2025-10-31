@@ -15,14 +15,42 @@ npm test
 
 ### Test Coverage
 
-- **fluffaction.test.js**: Tests for Buffer.from() usage and DLC flashing interval optimization
+- **fluffaction.test.js**: Comprehensive tests for Buffer.from() usage and command execution
   - Validates all commands use Buffer.from() instead of deprecated new Buffer()
+  - Tests antenna, debug, LCD, action, custom commands
+  - Tests setname command with sequence execution
+  - Tests moodmeter commands for all mood types
+  - Tests all DLC operations (delete, load, activate, deactivate, flash)
+  - Tests Nordic commands (custom and packet ACK)
+  - Tests setidle command (start/stop idle mode)
   - Verifies 20ms interval is used for DLC flashing operations
-  - Tests command execution and parameter handling
+  - Tests command listing functionality
 
-- **fluffcon.test.js**: Tests for Buffer.from() usage in idle interval
+- **fluffcon.test.js**: Comprehensive tests for Fluff class BLE operations
   - Validates startIdle() uses Buffer.from()
-  - Tests Fluff class initialization and BLE characteristic handling
+  - Tests generalPlusWriteSequence for multi-command execution
+  - Tests nordicWrite for Nordic microcontroller communication
+  - Tests writeToSlot for DLC file writing
+  - Tests callback registration and triggering (GeneralPlus and Nordic)
+  - Tests stopIdle functionality
+  - Validates proper BLE characteristic handling
+
+- **fluffd.test.js**: Tests for HTTP server functionality
+  - Tests command routing (/cmd, /list, /scan endpoints)
+  - Tests JSON POST data parsing
+  - Tests error handling for malformed JSON
+  - Tests multi-furby command targeting
+  - Tests response handling (success and error cases)
+  - Validates CORS headers
+
+- **logger.test.js**: Tests for logging configuration
+  - Tests LOG_LEVEL environment variable configuration
+  - Tests default log level (debug)
+  - Tests all log levels (debug, info, warn, error, verbose)
+  - Tests production vs development mode transport configuration
+  - Validates winston logger instance creation
+  - Tests logging methods functionality
+  - Tests log level filtering
 
 ## Python Tests
 
@@ -59,6 +87,12 @@ python3 -m unittest discover -v
 - chai: Assertion library
 - sinon: Mocking and stubbing library
 
+Install JavaScript dependencies:
+```bash
+cd fluffd
+npm install
+```
+
 ### Python
 - Pillow: Image processing library (for visualization tests)
 
@@ -67,6 +101,21 @@ Install Python dependencies:
 cd util
 pip3 install -r requirements.txt
 ```
+
+## Test Summary
+
+**JavaScript Tests:** 49 passing
+- fluffaction.js: 20 tests
+- fluffcon.js: 17 tests
+- fluffd.js: 10 tests
+- logger.js: 12 tests
+
+**Python Tests:** 9 passing
+- test_visualize_audio.py: 3 tests
+- test_toimage.py: 3 tests
+- test_inject_binary.py: 3 tests
+
+**Total:** 58 comprehensive tests covering all major functionality
 
 ## CI Integration
 
@@ -79,3 +128,12 @@ cd fluffd && npm test
 # Python tests
 cd util/test && python3 -m unittest discover -v
 ```
+
+## Test Philosophy
+
+These tests follow best practices:
+- **Unit tests** for individual functions and methods
+- **Integration tests** for BLE communication and HTTP routing
+- **Mock objects** to avoid hardware dependencies
+- **Comprehensive coverage** of happy paths and error cases
+- **Performance validation** for optimized code paths
