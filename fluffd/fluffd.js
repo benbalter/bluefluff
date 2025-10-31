@@ -93,7 +93,7 @@ function parseCommand(name, req, res) {
 	});
 }
 
-http.createServer(function (req, res) {
+const server = http.createServer(function (req, res) {
 	let fragments = req.url.substring(1).split("/");
 	let query = fragments.splice(0, 2);
 	query.push(fragments.join("/"));
@@ -146,4 +146,48 @@ noble.on("discover", function(peripheral) {
 			furbies[peripheral.uuid] = fluff;
 		});
 	}
+});
+
+// Handle shutdown gracefully
+process.on("SIGINT", function () {
+	winston.info("\nShutting down gracefully...");
+	
+	// Stop scanning
+	noble.stopScanning();
+	
+	// Close HTTP server
+	server.close(() => {
+		winston.info("HTTP server closed");
+	});
+	
+	// Disconnect all furbies
+	let disconnectCount = 0;
+	let totalFurbies = Object.keys(furbies).length;
+	
+	if (totalFurbies === 0) {
+		winston.info("No furbies connected, exiting");
+		process.exit();
+		return;
+	}
+	
+	for (let uuid in furbies) {
+		let fluff = furbies[uuid];
+		fluff.disconnect((error) => {
+			if (error) {
+				winston.error("Error disconnecting furby " + uuid + ": " + error);
+			}
+			disconnectCount++;
+			
+			if (disconnectCount >= totalFurbies) {
+				winston.info("All furbies disconnected, exiting");
+				process.exit();
+			}
+		});
+	}
+	
+	// Fallback timeout in case disconnect callbacks don't fire
+	setTimeout(() => {
+		winston.info("Shutdown timeout reached, forcing exit");
+		process.exit();
+	}, 3000);
 });

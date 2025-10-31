@@ -20,23 +20,6 @@ const FURBY = {
 	}
 };
 
-// Handle Ctrl+C or other SIGINT events and make sure we close our connection
-// Otherwise, Furby will remain in a state where it doesn't accept any connection attempts.
-function exitHandler(furby) {
-	process.on("SIGINT", function () {
-		winston.info("\nClosing connection...");
-		furby.disconnect(function(error) {
-			if (error)
-				winston.error("Error while disconnecting: " + error);
-			else
-				winston.info("Disconnected, exiting.");
-
-			// TODO: This does not work with multiple furbies connect
-			process.exit();
-		});
-	});
-}
-
 // Get GATT characterstic matching serviceUUID and characteristicUUID from furby peripheral.
 // callback is a function(characteristic), where characteristic is a noBLE characteristic.
 function getFurbyCharacteristics(furby, serviceUUID, characteristicUUIDs, callback) {
@@ -72,7 +55,8 @@ function getFurbyCharacteristics(furby, serviceUUID, characteristicUUIDs, callba
  * to follow a sequential pattern.
  */
 class Fluff {
-	constructor(gpWrite, gpListen, nWrite, nListen, rssiListen, fileWrite) {
+	constructor(peripheral, gpWrite, gpListen, nWrite, nListen, rssiListen, fileWrite) {
+		this.peripheral = peripheral;
 		this.gpWrite = gpWrite;
 		this.gpListen = gpListen;
 		this.nWrite = nWrite;
@@ -83,6 +67,9 @@ class Fluff {
 		// Initialize empty list of callbacks
 		this.gpCallbacks = [];
 		this.nCallbacks = [];
+		
+		// Initialize params storage
+		this.params = {};
 
 		this.startIdle();
 		this.subscribeNotifications();
@@ -227,6 +214,12 @@ class Fluff {
 	getParam(param) {
 		return this.params[param];
 	}
+
+	// Disconnect from the peripheral
+	disconnect(callback) {
+		this.stopIdle();
+		this.peripheral.disconnect(callback);
+	}
 }
 
 
@@ -242,8 +235,6 @@ module.exports.connect = function (furby, callback) {
 			return;
 		}
 
-		exitHandler(furby);
-
 		let characteristicUUIDs = Object.values(FURBY.CHARACTERISTIC);
 		getFurbyCharacteristics(furby, FURBY.SERVICE.FLUFF, characteristicUUIDs, function (characteristics) {
 			let gpWrite = characteristics[FURBY.CHARACTERISTIC.GENERALPLUS_WRITE];
@@ -253,7 +244,7 @@ module.exports.connect = function (furby, callback) {
 			let rssiListen = characteristics[FURBY.CHARACTERISTIC.RSSI_LISTEN];
 			let fileWrite = characteristics[FURBY.CHARACTERISTIC.FILEWRITE];
 			winston.debug("Read all fluff characteristics");
-			callback(new Fluff(gpWrite, gpListen, nWrite, nListen, rssiListen, fileWrite));
+			callback(new Fluff(furby, gpWrite, gpListen, nWrite, nListen, rssiListen, fileWrite));
 		});
 
 		winston.info("Connected to Furby");
@@ -261,8 +252,6 @@ module.exports.connect = function (furby, callback) {
 };
 
 module.exports.introspect = function (furby) {
-	exitHandler(furby);
-
 	furby.connect(function (error) {
 		if (error) {
 			winston.error("Error while connecting for introspection: " + error);
