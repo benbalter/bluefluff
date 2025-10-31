@@ -129,12 +129,15 @@ for payload in INJECTIONS:
 						 os.path.getsize(self.target_file.name))
 		
 		# Verify payloads were injected at correct offsets
+		# Read data first, then perform assertions to ensure file is closed before assertions
 		with open(self.output_file.name, 'rb') as f:
 			f.seek(1000)
-			self.assertEqual(f.read(8), b'PAYLOAD1')
-			
+			payload1_data = f.read(8)
 			f.seek(5000)
-			self.assertEqual(f.read(8), b'PAYLOAD2')
+			payload2_data = f.read(8)
+		
+		self.assertEqual(payload1_data, b'PAYLOAD1')
+		self.assertEqual(payload2_data, b'PAYLOAD2')
 
 
 if __name__ == '__main__':
