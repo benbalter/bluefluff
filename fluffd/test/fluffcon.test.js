@@ -263,7 +263,7 @@ describe("fluffcon Fluff class", function() {
 
 	describe("Shutdown behavior", function() {
 		it("should properly disconnect and clean up idle interval", function(done) {
-			this.timeout(8000);  // Test waits for 7 seconds total
+			this.timeout(8000);  // Test needs extra time for idle intervals (3.5s + 3.5s)
 			
 			// Mock the characteristics
 			const mockGpWrite = {

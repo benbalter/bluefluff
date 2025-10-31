@@ -172,17 +172,27 @@ process.on("SIGINT", function () {
 	
 	for (let uuid in furbies) {
 		let fluff = furbies[uuid];
-		fluff.disconnect((error) => {
-			if (error) {
-				winston.error("Error disconnecting furby " + uuid + ": " + error);
-			}
+		try {
+			fluff.disconnect((error) => {
+				if (error) {
+					winston.error("Error disconnecting furby " + uuid + ": " + error);
+				}
+				disconnectCount++;
+				
+				if (disconnectCount >= totalFurbies) {
+					winston.info("All furbies disconnected, exiting");
+					process.exit();
+				}
+			});
+		} catch (e) {
+			winston.error("Exception while disconnecting furby " + uuid + ": " + e);
 			disconnectCount++;
 			
 			if (disconnectCount >= totalFurbies) {
 				winston.info("All furbies disconnected, exiting");
 				process.exit();
 			}
-		});
+		}
 	}
 	
 	// Fallback timeout in case disconnect callbacks don't fire
