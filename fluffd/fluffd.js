@@ -43,7 +43,7 @@ function startCommand(name, post_data, res) {
 
 	// Callback for collecting results from multiple furbies
 	function respond_single(error, multiple_count_ref, multiple_errstring_ref) {
-		if (error != false)
+		if (error !== false)
 			multiple_errstring_ref.value += error + "; ";
 
 		multiple_count_ref.value++;
