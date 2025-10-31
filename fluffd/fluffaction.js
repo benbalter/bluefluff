@@ -224,6 +224,7 @@ commands["flashdlc"] = {
 							cleanup();
 							winston.error("FlashDLC: Error writing to slot: " + error);
 							if (callback) callback("Error writing to slot: " + error);
+							return;
 						}
 					});
 

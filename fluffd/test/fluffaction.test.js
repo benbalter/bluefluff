@@ -128,7 +128,7 @@ describe("fluffaction", function() {
 					const interval1 = writeCallTimestamps[1] - writeCallTimestamps[0];
 					const interval2 = writeCallTimestamps[2] - writeCallTimestamps[1];
 					
-					// Allow 15-30ms range (accounting for timing variations)
+					// Allow 15-35ms range (accounting for timing variations)
 					expect(interval1).to.be.within(15, 35);
 					expect(interval2).to.be.within(15, 35);
 				}
