@@ -75,12 +75,13 @@ target_size = os.path.getsize(TARGET)
 for payload in INJECTIONS:
 	payload["size"] = os.path.getsize(payload["path"])
 	payload["fd"] = open(payload["path"], "rb")
+	# Pre-compute payload ranges
+	payload["start"] = payload["offset"]
+	payload["end"] = payload["offset"] + payload["size"]
 
 def chunk_has_payload(chunk_start, chunk_end, injections):
 	for payload in injections:
-		payload_start = payload["offset"]
-		payload_end = payload["offset"] + payload["size"]
-		if chunk_start < payload_end and chunk_end > payload_start:
+		if chunk_start < payload["end"] and chunk_end > payload["start"]:
 			return True
 	return False
 
@@ -95,7 +96,7 @@ with open(OUTFILE, "wb") as outfile:
 				for _ in range(chunk_size):
 					override = False
 					for payload in INJECTIONS:
-						if count >= payload["offset"] and count < payload["offset"] + payload["size"]:
+						if count >= payload["start"] and count < payload["end"]:
 							outfile.write(payload["fd"].read(1))
 							target.read(1)
 							override = True
