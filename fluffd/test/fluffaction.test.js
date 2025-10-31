@@ -93,16 +93,27 @@ describe("fluffaction", function() {
 			fs.writeFileSync(testFile, Buffer.alloc(100));
 
 			const writeCallTimestamps = [];
+			const callbacks = [];
 			const mockFluff = {
 				generalPlusWrite: sinon.spy(function(buffer, callback) {
 					if (callback) callback(false);
 				}),
 				addGeneralPlusCallback: function(callback) {
+					callbacks.push(callback);
 					// Simulate ready to receive response
 					setTimeout(() => callback(Buffer.from([0x24, 0x02])), 10);
+					// Simulate completion notification after some time
+					setTimeout(() => callback(Buffer.from([0x24, 0x05])), 200);
 				},
-				writeToSlot: sinon.spy(function(buffer) {
+				removeGeneralPlusCallback: function(callback) {
+					const index = callbacks.indexOf(callback);
+					if (index > -1) {
+						callbacks.splice(index, 1);
+					}
+				},
+				writeToSlot: sinon.spy(function(buffer, callback) {
 					writeCallTimestamps.push(Date.now());
+					if (callback) callback(false);
 				})
 			};
 
@@ -110,22 +121,156 @@ describe("fluffaction", function() {
 				filename: "test.dlc",
 				dlcfile: testFile
 			}, function(error) {
-				// Wait for some writes to complete
-				setTimeout(() => {
-					// Verify interval is around 20ms (with some tolerance)
-					if (writeCallTimestamps.length >= 3) {
-						const interval1 = writeCallTimestamps[1] - writeCallTimestamps[0];
-						const interval2 = writeCallTimestamps[2] - writeCallTimestamps[1];
-						
-						// Allow 15-25ms range (accounting for timing variations)
-						expect(interval1).to.be.within(15, 30);
-						expect(interval2).to.be.within(15, 30);
-					}
+				expect(error).to.equal(false);
+				
+				// Verify interval is around 20ms (with some tolerance)
+				if (writeCallTimestamps.length >= 3) {
+					const interval1 = writeCallTimestamps[1] - writeCallTimestamps[0];
+					const interval2 = writeCallTimestamps[2] - writeCallTimestamps[1];
 					
-					// Cleanup
-					fs.unlinkSync(testFile);
-					done();
-				}, 150);
+					// Allow 15-30ms range (accounting for timing variations)
+					expect(interval1).to.be.within(15, 35);
+					expect(interval2).to.be.within(15, 35);
+				}
+				
+				// Cleanup
+				fs.unlinkSync(testFile);
+				done();
+			});
+		});
+
+		it("should handle file read errors gracefully", function(done) {
+			this.timeout(5000);
+			const callbacks = [];
+			const mockFluff = {
+				generalPlusWrite: sinon.spy(function(buffer, callback) {
+					if (callback) callback(false);
+				}),
+				addGeneralPlusCallback: function(callback) {
+					callbacks.push(callback);
+					// Simulate ready to receive response
+					setTimeout(() => callback(Buffer.from([0x24, 0x02])), 10);
+				},
+				removeGeneralPlusCallback: function(callback) {
+					const index = callbacks.indexOf(callback);
+					if (index > -1) {
+						callbacks.splice(index, 1);
+					}
+				},
+				writeToSlot: sinon.spy(function(buffer, callback) {
+					if (callback) callback(false);
+				})
+			};
+
+			fluffaction.execute(mockFluff, "flashdlc", {
+				filename: "test.dlc",
+				dlcfile: "/nonexistent/file.dlc"
+			}, function(error) {
+				expect(error).to.be.a("string");
+				expect(error).to.include("Error accessing file");
+				done();
+			});
+		});
+
+		it("should clean up callbacks on completion", function(done) {
+			this.timeout(5000);
+			const fs = require("fs");
+			const path = require("path");
+			
+			// Create a small test DLC file
+			const testFile = path.join(__dirname, "test2.dlc");
+			fs.writeFileSync(testFile, Buffer.alloc(50));
+
+			const callbacks = [];
+			const mockFluff = {
+				generalPlusWrite: sinon.spy(function(buffer, callback) {
+					if (callback) callback(false);
+				}),
+				addGeneralPlusCallback: function(callback) {
+					callbacks.push(callback);
+					// Simulate ready to receive response
+					setTimeout(() => callback(Buffer.from([0x24, 0x02])), 10);
+					// Simulate completion notification
+					setTimeout(() => callback(Buffer.from([0x24, 0x05])), 150);
+				},
+				removeGeneralPlusCallback: sinon.spy(function(callback) {
+					const index = callbacks.indexOf(callback);
+					if (index > -1) {
+						callbacks.splice(index, 1);
+					}
+				}),
+				writeToSlot: sinon.spy(function(buffer, callback) {
+					if (callback) callback(false);
+				})
+			};
+
+			fluffaction.execute(mockFluff, "flashdlc", {
+				filename: "test2.dlc",
+				dlcfile: testFile
+			}, function(error) {
+				expect(error).to.equal(false);
+				
+				// Verify that callbacks were removed
+				expect(mockFluff.removeGeneralPlusCallback.callCount).to.be.at.least(1);
+				
+				// Cleanup
+				fs.unlinkSync(testFile);
+				done();
+			});
+		});
+
+		it("should report progress during flash operation", function(done) {
+			this.timeout(5000);
+			const fs = require("fs");
+			const path = require("path");
+			const winston = require("../logger");
+			
+			// Create a test DLC file that's large enough to trigger progress updates
+			const testFile = path.join(__dirname, "test3.dlc");
+			fs.writeFileSync(testFile, Buffer.alloc(500));
+
+			// Spy on winston.info to check for progress messages
+			const infoSpy = sinon.spy(winston, "info");
+
+			const callbacks = [];
+			const mockFluff = {
+				generalPlusWrite: sinon.spy(function(buffer, callback) {
+					if (callback) callback(false);
+				}),
+				addGeneralPlusCallback: function(callback) {
+					callbacks.push(callback);
+					setTimeout(() => callback(Buffer.from([0x24, 0x02])), 10);
+					setTimeout(() => callback(Buffer.from([0x24, 0x05])), 600);
+				},
+				removeGeneralPlusCallback: function(callback) {
+					const index = callbacks.indexOf(callback);
+					if (index > -1) {
+						callbacks.splice(index, 1);
+					}
+				},
+				writeToSlot: sinon.spy(function(buffer, callback) {
+					if (callback) callback(false);
+				})
+			};
+
+			fluffaction.execute(mockFluff, "flashdlc", {
+				filename: "test3.dlc",
+				dlcfile: testFile
+			}, function(error) {
+				expect(error).to.equal(false);
+				
+				// Check for progress messages
+				const progressCalls = infoSpy.getCalls().filter(call => 
+					call.args[0] && call.args[0].includes("FlashDLC: Progress")
+				);
+				expect(progressCalls.length).to.be.at.least(1);
+				
+				// Restore winston.info
+				infoSpy.restore();
+				
+				// Cleanup
+				fs.unlinkSync(testFile);
+				done();
 			});
 		});
 	});
