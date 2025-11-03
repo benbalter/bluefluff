@@ -164,6 +164,14 @@ process.on("SIGINT", function () {
 	let disconnectCount = 0;
 	let totalFurbies = Object.keys(furbies).length;
 	
+	// Helper function to check if all furbies are disconnected and exit
+	function checkAndExit() {
+		if (disconnectCount >= totalFurbies) {
+			winston.info("All furbies disconnected, exiting");
+			process.exit();
+		}
+	}
+	
 	if (totalFurbies === 0) {
 		winston.info("No furbies connected, exiting");
 		process.exit();
@@ -177,20 +185,12 @@ process.on("SIGINT", function () {
 					winston.error("Error disconnecting furby " + uuid + ": " + error);
 				}
 				disconnectCount++;
-				
-				if (disconnectCount >= totalFurbies) {
-					winston.info("All furbies disconnected, exiting");
-					process.exit();
-				}
+				checkAndExit();
 			});
 		} catch (e) {
 			winston.error("Exception while disconnecting furby " + uuid + ": " + e);
 			disconnectCount++;
-			
-			if (disconnectCount >= totalFurbies) {
-				winston.info("All furbies disconnected, exiting");
-				process.exit();
-			}
+			checkAndExit();
 		}
 	}
 	
