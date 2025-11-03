@@ -1,6 +1,17 @@
 # Tests for Performance Improvements
 
+[![Tests](https://github.com/benbalter/bluefluff/workflows/Tests/badge.svg)](https://github.com/benbalter/bluefluff/actions/workflows/test.yml)
+
 This directory contains test suites for validating the performance optimizations made to the bluefluff repository.
+
+## Continuous Integration
+
+Tests are automatically run on every push and pull request via GitHub Actions. The CI pipeline runs:
+- JavaScript tests on Node.js 18.x and 20.x
+- Python tests on Python 3.10, 3.11, and 3.12
+- ESLint for code quality
+
+View the [workflow file](.github/workflows/test.yml) for details.
 
 ## JavaScript Tests
 

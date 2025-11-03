@@ -1,0 +1,64 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  javascript-tests:
+    name: JavaScript Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: fluffd/package.json
+    
+    - name: Install dependencies
+      working-directory: ./fluffd
+      run: npm ci
+    
+    - name: Run linter
+      working-directory: ./fluffd
+      run: npm run lint
+    
+    - name: Run tests
+      working-directory: ./fluffd
+      run: npm test
+
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+        cache-dependency-path: util/requirements.txt
+    
+    - name: Install dependencies
+      working-directory: ./util
+      run: pip install -r requirements.txt
+    
+    - name: Run tests
+      working-directory: ./util/test
+      run: python -m unittest discover -v

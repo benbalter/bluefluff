@@ -1,3 +1,5 @@
+[![Tests](https://github.com/benbalter/bluefluff/workflows/Tests/badge.svg)](https://github.com/benbalter/bluefluff/actions/workflows/test.yml)
+
 > With its Bluetooth Connection, Furby Connect is updated frequently with new surprises, like songs. When the antenna glows, this means Furby has something new to show you in the Furby Connect World app. Furby loves to share kid-friendly videos.
 
 <p align="center">
