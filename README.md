@@ -1,3 +1,5 @@
+[![Tests](https://github.com/benbalter/bluefluff/workflows/Tests/badge.svg)](https://github.com/benbalter/bluefluff/actions/workflows/test.yml)
+
 > With its Bluetooth Connection, Furby Connect is updated frequently with new surprises, like songs. When the antenna glows, this means Furby has something new to show you in the Furby Connect World app. Furby loves to share kid-friendly videos.
 
 <p align="center">
@@ -54,7 +56,7 @@ This project contains reverse-engineered documentation for different elements of
 ## fluffd and fluffd-client
 "fluffd" exists to make interacting with and controlling Furby Connect via BLE from your Linux, macOS, FreeBSD or Windows computer simpler. Thanks to its client-server model, it can also easily be used on something like a Raspberry Pi. fluffd requires either builtin Bluetooth Low Energy (e.g. the one integrated into Raspberry Pi 3) or a USB Bluetooth 4.0 (or higher) adapter.
 
-"fluffd" is based on [node.js](https://nodejs.org) and uses [noble](https://github.com/sandeepmistry/noble) in the background. You will need **node.js version 7.0 or later** in order to run fluffd.
+"fluffd" is based on [node.js](https://nodejs.org) and uses [noble](https://github.com/sandeepmistry/noble) in the background. You will need **node.js version 18.0 or later** in order to run fluffd.
 
 ### Installation on Linux
 * Make sure you have [node.js](https://nodejs.org) installed
