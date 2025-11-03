@@ -139,7 +139,14 @@ commands["dlc_delete"] = {
 
 commands["flashdlc"] = {
 	run : function (fluff, params, callback) {
-		const dlcsize = fs.statSync(params.dlcfile)["size"];
+		let dlcsize;
+		try {
+			dlcsize = fs.statSync(params.dlcfile)["size"];
+		} catch (error) {
+			winston.error("FlashDLC: Error accessing file: " + error);
+			if (callback) callback("Error accessing file: " + error);
+			return;
+		}
 
 		// Not sure what buf_slot does?? Is it really the DLC slot??
 		let buf_cmd = Buffer.from([0x50, 0x00]);
@@ -149,34 +156,98 @@ commands["flashdlc"] = {
 		let buf_end = Buffer.from([0x00, 0x00]);
 		let cmd_prepare = Buffer.concat([buf_cmd, buf_size, buf_slot, buf_filename, buf_end]);
 
-		fluff.generalPlusWrite(cmd_prepare, callback);
+		let readyCallback = null;
+		let completeCallback = null;
+		let flashTimeout = null;
+		let flashint = null;
+
+		// Cleanup function to remove callbacks and clear intervals/timeouts
+		const cleanup = function() {
+			if (flashint) clearInterval(flashint);
+			if (flashTimeout) clearTimeout(flashTimeout);
+			if (readyCallback) fluff.removeGeneralPlusCallback(readyCallback);
+			if (completeCallback) fluff.removeGeneralPlusCallback(completeCallback);
+		};
+
+		fluff.generalPlusWrite(cmd_prepare, function(error) {
+			if (error) {
+				cleanup();
+				if (callback) callback(error);
+				return;
+			}
+		});
+
+		// Set timeout for the entire flash operation (10 minutes)
+		flashTimeout = setTimeout(function() {
+			cleanup();
+			winston.error("FlashDLC: Timeout waiting for flash to complete");
+			if (callback) callback("Flash operation timed out");
+		}, 600000);
 
 		// Wait until GeneralPlus is ready to receive (sends 24:02 response)
-		fluff.addGeneralPlusCallback(function (data) {
+		readyCallback = function (data) {
 			if (!(data[0] == 0x24 && data[1] == 0x02))
 				return;
 			winston.info("FlashDLC: Got Ready to Receive");
+			fluff.removeGeneralPlusCallback(readyCallback);
+			readyCallback = null;
 
 			fs.readFile(params.dlcfile, function (error, dlc) {
-				if (error)
-					throw error;
+				if (error) {
+					cleanup();
+					winston.error("FlashDLC: Error reading file: " + error);
+					if (callback) callback("Error reading file: " + error);
+					return;
+				}
 
 				// Write DLC piece by piece
 				let offset = 0;
+				const totalChunks = Math.ceil(dlc.length / 20);
+				let lastProgressReport = 0;
+
+				// Wait for completion notification (24:05 response)
+				completeCallback = function(data) {
+					if (data[0] == 0x24 && data[1] == 0x05) {
+						cleanup();
+						winston.info("FlashDLC: Flash completed successfully");
+						if (callback) callback(false);
+					}
+				};
+				fluff.addGeneralPlusCallback(completeCallback);
 
 				// Use 20ms interval instead of 5ms to reduce overhead while maintaining throughput
-				let flashint = setInterval(function () {
+				flashint = setInterval(function () {
 					const piece = dlc.slice(offset, offset + 20);
-					fluff.writeToSlot(piece);
+					
+					fluff.writeToSlot(piece, function(error) {
+						if (error) {
+							cleanup();
+							winston.error("FlashDLC: Error writing to slot: " + error);
+							if (callback) callback("Error writing to slot: " + error);
+							return;
+						}
+					});
 
-					// End of buffer: Stop writing
-					if (piece.length < 20)
-						clearInterval(flashint);
+					// Progress reporting every 10%
+					const currentChunk = Math.floor(offset / 20);
+					const progress = Math.floor((currentChunk / totalChunks) * 100);
+					if (progress >= lastProgressReport + 10 && progress < 100) {
+						winston.info("FlashDLC: Progress " + progress + "%");
+						lastProgressReport = progress;
+					}
 
 					offset += 20;
+
+					// End of buffer: Stop writing
+					if (piece.length < 20) {
+						clearInterval(flashint);
+						flashint = null;
+						winston.info("FlashDLC: All data sent, waiting for completion notification");
+					}
 				}, 20);
 			});
-		});
+		};
+		fluff.addGeneralPlusCallback(readyCallback);
 	},
 	readable: "Flash DLC file",
 	description: "Flash DLC file to slot on Furby",
