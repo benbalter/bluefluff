@@ -155,7 +155,7 @@ describe("fluffd HTTP server", function() {
 
 		it("should respond with error message on failure", function() {
 			const error = "Connection failed";
-			const expectedResponse = error === false ? "ok" : "error: " + error;
+			const expectedResponse = !error ? "ok" : "error: " + error;
 			expect(expectedResponse).to.equal("error: Connection failed");
 		});
 	});
