@@ -346,4 +346,86 @@ describe("fluffcon Fluff class", function() {
 			});
 		});
 	});
+
+	describe("Shutdown behavior", function() {
+		it("should properly disconnect and clean up idle interval", function(done) {
+			this.timeout(8000);  // Test needs extra time for idle intervals (3.5s + 3.5s)
+			
+			// Mock the characteristics
+			const mockGpWrite = {
+				write: sinon.stub().callsArg(2)
+			};
+
+			const mockGpListen = {
+				on: sinon.stub(),
+				subscribe: sinon.stub().callsArg(0)
+			};
+
+			const mockNWrite = { write: sinon.stub() };
+			const mockNListen = {
+				on: sinon.stub(),
+				subscribe: sinon.stub().callsArg(0)
+			};
+			const mockRssiListen = {
+				on: sinon.stub(),
+				subscribe: sinon.stub().callsArg(0)
+			};
+			const mockFileWrite = { write: sinon.stub() };
+
+			// Load fluffcon module
+			delete require.cache[require.resolve("../fluffcon")];
+			const fluffcon = require("../fluffcon");
+
+			// Create mock peripheral with disconnect capability
+			const mockPeripheral = {
+				uuid: "test-uuid",
+				connect: function(callback) {
+					callback(null);
+				},
+				discoverServices: function(uuids, callback) {
+					callback(null, [{
+						discoverCharacteristics: function(charUuids, callback) {
+							const chars = {
+								"dab91383b5a1e29cb041bcd562613bde": mockGpWrite,
+								"dab91382b5a1e29cb041bcd562613bde": mockGpListen,
+								"dab90757b5a1e29cb041bcd562613bde": mockNWrite,
+								"dab90756b5a1e29cb041bcd562613bde": mockNListen,
+								"dab90755b5a1e29cb041bcd562613bde": mockRssiListen,
+								"dab90758b5a1e29cb041bcd562613bde": mockFileWrite
+							};
+							const result = charUuids.map(uuid => {
+								const char = Object.assign({}, chars[uuid]);
+								char.uuid = uuid;
+								return char;
+							});
+							callback(null, result);
+						}
+					}]);
+				},
+				disconnect: sinon.stub().callsArg(0)
+			};
+
+			// Connect and test disconnect
+			fluffcon.connect(mockPeripheral, function(fluff) {
+				// Verify idle interval is running
+				setTimeout(() => {
+					const initialCallCount = mockGpWrite.write.callCount;
+					expect(initialCallCount).to.be.greaterThan(0);
+					
+					// Call disconnect
+					fluff.disconnect((error) => {
+						expect(error).to.be.undefined;
+						expect(mockPeripheral.disconnect.calledOnce).to.be.true;
+						
+						// Wait and verify idle interval has stopped
+						setTimeout(() => {
+							const finalCallCount = mockGpWrite.write.callCount;
+							expect(finalCallCount).to.equal(initialCallCount);
+							done();
+						}, 3500);
+					});
+				}, 3500);
+			});
+		});
+	});
 });
