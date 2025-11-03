@@ -167,7 +167,6 @@ process.on("SIGINT", function () {
 	if (totalFurbies === 0) {
 		winston.info("No furbies connected, exiting");
 		process.exit();
-		return;
 	}
 	
 	for (let uuid in furbies) {
